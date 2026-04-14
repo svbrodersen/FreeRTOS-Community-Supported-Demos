@@ -2,7 +2,7 @@ OUTPUT_DIR := ./output
 IMAGE := RTOSDemo.elf
 
 # The directory that contains the /source and /demo sub directories.
-FREERTOS_ROOT = ./../../../../../..
+FREERTOS_ROOT = ./../../../../../../
 
 CC = riscv64-unknown-elf-gcc
 LD = riscv64-unknown-elf-gcc

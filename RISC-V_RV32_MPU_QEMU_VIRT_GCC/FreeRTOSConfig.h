@@ -47,6 +47,7 @@
 #define configMTIMECMP_BASE_ADDRESS		( CLINT_ADDR + CLINT_MTIMECMP )
 #define configISR_STACK_SIZE_WORDS		( 300 )
 
+#define configNUMBER_OF_CORES ( 1 )
 #define configUSE_PREEMPTION			1
 #define configUSE_IDLE_HOOK				0
 #define configUSE_TICK_HOOK				1
@@ -140,5 +141,9 @@ machine on which the test is developed). */
 #define configENABLE_ACCESS_CONTROL_LIST               ( 1 )
 #define configPROTECTED_KERNEL_OBJECT_POOL_SIZE        ( 150 )
 #define configSYSTEM_CALL_STACK_SIZE                   ( 512 )
+
+#define configENABLE_DOMAINS ( 1 )
+#define configNUM_TIME_SLICES ( 32 )
+#define configSUPPORT_DYNAMIC_ALLOCATION ( 1 )
 
 #endif /* FREERTOS_CONFIG_H */

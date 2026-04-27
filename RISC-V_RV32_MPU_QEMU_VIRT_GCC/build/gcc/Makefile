@@ -169,3 +169,53 @@ clean:
 print-%  : ; @echo $* = $($*)
 
 .PHONY: all clean
+
+qemu-run: all
+	qemu-system-riscv32 \
+		-smp 1 \
+		-machine virt \
+		-bios none \
+		--kernel $(OUTPUT_DIR)/$(IMAGE) \
+		-chardev stdio,id=con,mux=on \
+		-serial chardev:con -mon chardev=con,mode=readline \
+		-net none \
+		-icount 1 \
+		-nographic 
+
+qemu-debug: all
+	qemu-system-riscv32 \
+		-smp 1 \
+		-machine virt \
+		-bios none \
+		--kernel $(OUTPUT_DIR)/$(IMAGE) \
+		-chardev stdio,id=con,mux=on \
+		-serial chardev:con -mon chardev=con,mode=readline \
+		-net none \
+		-nographic \
+		-s -S
+
+qemu-timing: CFLAGS += -DconfigENABLE_DOMAIN_TIMING=1
+qemu-timing: all
+	qemu-system-riscv32 \
+		-smp 1 \
+		-machine virt \
+		-bios none \
+		--kernel $(OUTPUT_DIR)/$(IMAGE) \
+		-chardev stdio,id=con,mux=on \
+		-serial chardev:con -mon chardev=con,mode=readline \
+		-net none \
+		-icount 1 \
+		-nographic
+
+qemu-plugin: all
+	qemu-system-riscv32 \
+		-smp 1 \
+		-plugin /workspace/src/qemu_timing_plugin/target/release/libqemu_timing_plugin.so,dcachesize=4096,elf_file=output/RTOSDemo.elf,timing_threshold=0.005 \
+		-machine virt \
+		-cpu rv32 \
+		-bios none \
+		--kernel $(OUTPUT_DIR)/$(IMAGE) \
+		-chardev stdio,id=con,mux=on \
+		-serial chardev:con -mon chardev=con,mode=readline \
+		-net none \
+		-nographic 

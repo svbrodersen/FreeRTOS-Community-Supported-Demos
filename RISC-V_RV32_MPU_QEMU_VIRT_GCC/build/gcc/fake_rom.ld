@@ -1,16 +1,36 @@
 OUTPUT_ARCH( "riscv" )
 ENTRY( _start )
 
+/*
+ * PMP NAPOT region sizes - must be power of two
+ * These define the maximum sizes for each PMP region
+ * Note: GNU ld does not support #define, so we use explicit values
+ *
+ * ROM Region: 256KB (0x40000) - power of two for NAPOT
+ * RAM Region: 512KB (0x80000) - power of two for NAPOT
+ */
+
 MEMORY
 {
-	/* Fake ROM area */
+	/*
+	 * PMP Region 1: Code and Read-Only Data
+	 * Start: 0x80000000, Max Size: 256KB (0x40000) - power of two for NAPOT
+	 *
+	 * PMP Region 2: Read-Write Data  
+	 * Start: 0x80100000, Max Size: 512KB (0x80000) - power of two for NAPOT
+	 */
 	rom (rxa) : ORIGIN = 0x80000000, LENGTH = 512K
-	ram (wxa) : ORIGIN = 0x80080000, LENGTH = 1024K
+	ram (wxa) : ORIGIN = 0x80100000, LENGTH = 1024K    /* Aligned to 1MB for PMP */
 }
 
 SECTIONS
 {
-	.init :
+	/*
+	 * PMP Region 1: Code and Read-Only Data
+	 * Start: 0x80000000, Size: 256KB (0x40000)
+	 * NAPOT encoding requires power-of-two size and alignment
+	 */
+	.init 0x80000000 :
 	{
 		_text = .;
 		KEEP (*(SORT_NONE(.init)))
@@ -30,8 +50,9 @@ SECTIONS
 		_etext = .;
 	} >rom AT>rom
 
-	.rodata.align ALIGN(4):
+	.rodata.align :
 	{
+		. = ALIGN(8);
 		_rodata = .;
 	} >rom AT>rom
 
@@ -45,12 +66,22 @@ SECTIONS
 		*(.rdata)
 		*(.rodata .rodata.*)
 		*(.gnu.linkonce.r.*)
+	} >rom AT>rom
 
-		. = ALIGN(8192);
+	/* Align and pad to PMP region boundary (256KB = 0x40000) */
+	.rodata.pmp_pad :
+	{
+		. = ALIGN(256K);
+		/* Ensure we don't exceed the region size */
+		ASSERT(. <= 0x80000000 + 256K, "ROM region exceeds PMP NAPOT size!");
 		_erodata = .;
 	} >rom AT>rom
 
-	.privileged_functions :
+	/* 
+	 * Optional privileged functions - placed after ROM region 
+	 * These are NOT part of the main PMP region
+	 */
+	.privileged_functions 0x80040000 :
 	{
 		*(privileged_functions)
 		FILL(0xDEAD);
@@ -75,9 +106,14 @@ SECTIONS
 	PROVIDE( __tls_size = __tls_end - ADDR(.tdata) );
 	PROVIDE( __tls_align = MAX(ALIGNOF(.tdata), ALIGNOF(.tbss)) );
 
-	.data.align :
+	/*
+	 * PMP Region 2: Read-Write Data
+	 * Start: 0x80100000, Size: 512KB (0x80000)
+	 * NAPOT encoding requires power-of-two size and alignment
+	 */
+	.data.align 0x80100000 :
 	{
-		. = ALIGN(4);
+		. = ALIGN(8);
 		_data = .;
 	} >ram AT>rom
 
@@ -102,13 +138,13 @@ SECTIONS
 		*(.srodata.cst2)
 		*(.srodata .srodata.*)
 
-		. = ALIGN(4);
+		. = ALIGN(8);
 		_edata = .;
 	} >ram AT>rom
 
 	.bss.align :
 	{
-		. = ALIGN(4);
+		. = ALIGN(8);
 		_bss = .;
 	} >ram AT>rom
 
@@ -124,15 +160,25 @@ SECTIONS
 		*(.bss .bss.*)
 		*(.gnu.linkonce.b.*)
 		*(COMMON)
+	} >ram AT>rom
 
-		. = ALIGN(8192);
+	/* Align and pad to PMP region boundary (512KB = 0x80000) */
+	.bss.pmp_pad :
+	{
+		. = ALIGN(512K);
+		/* Ensure we don't exceed the region size */
+		ASSERT(. <= 0x80100000 + 512K, "RAM region exceeds PMP NAPOT size!");
 		_ebss = .;
 	} >ram AT>rom
 
 	. = ALIGN(8);
 	_end = .;
 
-	.privileged_data.align :
+	/*
+	 * Optional privileged data - placed after main RAM region
+	 * These are NOT part of the main PMP region
+	 */
+	.privileged_data.align 0x80180000 :
 	{
 		_privileged_data = .;
 	} >ram AT>rom

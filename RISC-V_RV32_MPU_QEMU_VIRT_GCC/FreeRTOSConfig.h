@@ -144,6 +144,7 @@ machine on which the test is developed). */
 
 #define configENABLE_DOMAINS ( 1 )
 #define configNUM_TIME_SLICES ( 32 )
+#define configNUM_TICKS_PER_SLICE ( 1 )
 #define configSUPPORT_DYNAMIC_ALLOCATION ( 1 )
 
 #endif /* FREERTOS_CONFIG_H */

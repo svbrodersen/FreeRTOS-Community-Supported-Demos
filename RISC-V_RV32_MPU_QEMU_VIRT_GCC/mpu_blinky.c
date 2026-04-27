@@ -73,7 +73,7 @@
 
 /* The rate at which data is sent to the queue.  The times are converted from
  * milliseconds to ticks using the pdMS_TO_TICKS() macro. */
-#define mainTASK_SEND_FREQUENCY_MS         pdMS_TO_TICKS( 200UL )
+#define mainTASK_SEND_FREQUENCY_MS         pdMS_TO_TICKS( 10UL )
 #define mainTIMER_SEND_FREQUENCY_MS        pdMS_TO_TICKS( 2000UL )
 
 /* The number of items the queue can hold at once. */
@@ -179,9 +179,18 @@ void freertos_risc_v_application_exception_handler( void )
     }
 }
 
+uint64_t rdcycle(void)
+{
+	uint64_t cycle;
+	__asm__ volatile("rdcycle %0" : "=r"(cycle));
+	return cycle;
+}
+
 /*** SEE THE COMMENTS AT THE TOP OF THIS FILE ***/
 void mpu_blinky( void )
 {
+    __asm__ volatile( "csrs mcounteren, %0" :: "r"(5) );
+    __asm__ volatile( "csrs scounteren, %0" :: "r"(5) );
     printf ( "MPU blinky demo start\n" );
     printf ( ".text   = [0x%x - 0x%x]\n", &_text, &_etext );
     printf ( ".rodata = [0x%x - 0x%x]\n", &_rodata, &_erodata );
@@ -200,6 +209,11 @@ void mpu_blinky( void )
     static StackType_t xQueueSendTaskStack[ configMINIMAL_STACK_SIZE ] __attribute__((aligned( configMINIMAL_STACK_SIZE)));
     printf("xQueueReceiveTaskStack = [0x%x - 0x%x]\n", xQueueReceiveTaskStack, (uintptr_t)xQueueReceiveTaskStack + configMINIMAL_STACK_SIZE);
     printf("xQueueSendTaskStack    = [0x%x - 0x%x]\n", xQueueSendTaskStack, (uintptr_t)xQueueSendTaskStack + configMINIMAL_STACK_SIZE);
+
+    DomainParameters_t ReceiveDomainParameters = {
+        .ulSliceIndex = 30,
+        .ulSliceLength = 2,
+    };
     TaskParameters_t xQueueReceiveTaskParameters =
     {
         .pvTaskCode     = prvQueueReceiveTask,
@@ -221,6 +235,14 @@ void mpu_blinky( void )
             /* *MUST* reserve one entry for stack */
             { 0, 0, 0 },
         }
+        #if ( configENABLE_DOMAINS == 1 )
+        ,.pxDomainParameters  = &ReceiveDomainParameters,
+        #endif
+        
+    };
+    DomainParameters_t SendDomainParameters = {
+        .ulSliceIndex = 28,
+        .ulSliceLength = 2,
     };
     TaskParameters_t xQueueSendTaskParameters =
     {
@@ -243,6 +265,9 @@ void mpu_blinky( void )
             /* *MUST* reserve one entry for stack */
             { 0, 0, 0 },
         }
+        #if ( configENABLE_DOMAINS == 1 )
+        ,.pxDomainParameters  = &SendDomainParameters,
+        #endif
     };
     TaskHandle_t xQueueReceiveTask;
     TaskHandle_t xQueueSendTask;
@@ -268,15 +293,6 @@ void mpu_blinky( void )
         }
         vGrantAccessToKernelObject( xQueueSendTask, (int32_t)xQueue );
 
-        /* Create the software timer, but don't start it yet. */
-        xTimer = xTimerCreate( "Timer",                     /* The text name assigned to the software timer - for debug only as it is not used by the kernel. */
-                               xTimerPeriod,                /* The period of the software timer in ticks. */
-                               pdTRUE,                      /* xAutoReload is set to pdTRUE, so this is an auto-reload timer. */
-                               NULL,                        /* The timer's ID is not used. */
-                               prvQueueSendTimerCallback ); /* The function executed when the timer expires. */
-
-        xTimerStart( xTimer, 0 );                           /* The scheduler has not started so use a block time of 0. */
-
         /* Start the tasks and timer running. */
         vTaskStartScheduler();
     }
@@ -299,6 +315,7 @@ static void prvQueueSendTask( void * pvParameters )
     const TickType_t xBlockTime = mainTASK_SEND_FREQUENCY_MS;
     const uint32_t ulValueToSend = mainVALUE_SENT_FROM_TASK;
     int i = 0;
+    TickType_t xTicks;
 
     /* Prevent the compiler warning about the unused parameter. */
     ( void ) pvParameters;
@@ -325,6 +342,8 @@ static void prvQueueSendTask( void * pvParameters )
          * write to the console.  0 is used as the block time so the send operation
          * will not block - it shouldn't need to block as the queue should always
          * have at least one space at this point in the code. */
+        xTicks = xTaskGetDomainTick();
+        printf( "Sending to task, DomainTick: %d\r\n", xTicks % configNUM_TIME_SLICES);
         xQueueSend( xQueue, &ulValueToSend, 0U );
         i++;
     }
@@ -357,6 +376,8 @@ static void prvQueueReceiveTask( void * pvParameters )
     /* Prevent the compiler warning about the unused parameter. */
     ( void ) pvParameters;
 
+    TickType_t xTicks;
+
     for( ; ; )
     {
         /* Wait until something arrives in the queue - this task will block
@@ -364,6 +385,7 @@ static void prvQueueReceiveTask( void * pvParameters )
          * FreeRTOSConfig.h.  It will not use any CPU time while it is in the
          * Blocked state. */
         xQueueReceive( xQueue, &ulReceivedValue, portMAX_DELAY );
+        xTicks = xTaskGetDomainTick();
 
         /*  To get here something must have been received from the queue, but
          * is it an expected value? */
@@ -371,7 +393,7 @@ static void prvQueueReceiveTask( void * pvParameters )
         {
             /* It is normally not good to call printf() from an embedded system,
              * although it is ok in this simulated case. */
-            printf( "Message received from task\r\n" );
+            printf( "Message received from task, DomainTick: %d\r\n", xTicks % configNUM_TIME_SLICES);
         }
         else if( ulReceivedValue == mainVALUE_SENT_FROM_TIMER )
         {

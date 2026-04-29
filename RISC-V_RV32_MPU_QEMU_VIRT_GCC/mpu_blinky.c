@@ -211,7 +211,7 @@ void mpu_blinky( void )
     printf("xQueueSendTaskStack    = [0x%x - 0x%x]\n", xQueueSendTaskStack, (uintptr_t)xQueueSendTaskStack + configMINIMAL_STACK_SIZE);
 
     DomainParameters_t ReceiveDomainParameters = {
-        .ulSliceIndex = 30,
+        .ulSliceIndex = 2,
         .ulSliceLength = 2,
     };
     TaskParameters_t xQueueReceiveTaskParameters =
@@ -241,7 +241,7 @@ void mpu_blinky( void )
         
     };
     DomainParameters_t SendDomainParameters = {
-        .ulSliceIndex = 28,
+        .ulSliceIndex = 4,
         .ulSliceLength = 2,
     };
     TaskParameters_t xQueueSendTaskParameters =
@@ -325,7 +325,7 @@ static void prvQueueSendTask( void * pvParameters )
 
     for( ; ; )
     {
-        if ( i == 10 )
+        if ( i == 5 )
         {
             printf( "%s: trying to access privileged data\n", __func__ );
             /* Triggers PMP access fault */

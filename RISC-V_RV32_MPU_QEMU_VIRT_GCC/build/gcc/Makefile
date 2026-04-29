@@ -118,6 +118,7 @@ INCLUDE_DIRS += -I$(DEMO_PROJECT)
 SOURCE_FILES += $(DEMO_PROJECT)/main.c
 SOURCE_FILES += $(DEMO_PROJECT)/main_blinky.c
 SOURCE_FILES += $(DEMO_PROJECT)/mpu_blinky.c
+SOURCE_FILES += $(DEMO_PROJECT)/mpu_priority_timing.c
 SOURCE_FILES += $(DEMO_PROJECT)/main_full.c
 SOURCE_FILES += $(DEMO_PROJECT)/ns16550.c
 SOURCE_FILES += $(DEMO_PROJECT)/riscv-virt.c
@@ -179,7 +180,6 @@ qemu-run: all
 		-chardev stdio,id=con,mux=on \
 		-serial chardev:con -mon chardev=con,mode=readline \
 		-net none \
-		-icount 1 \
 		-nographic 
 
 qemu-debug: all

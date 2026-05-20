@@ -118,6 +118,7 @@ INCLUDE_DIRS += -I$(DEMO_PROJECT)
 SOURCE_FILES += $(DEMO_PROJECT)/main.c
 SOURCE_FILES += $(DEMO_PROJECT)/main_blinky.c
 SOURCE_FILES += $(DEMO_PROJECT)/mpu_blinky.c
+SOURCE_FILES += $(DEMO_PROJECT)/domain_full.c
 SOURCE_FILES += $(DEMO_PROJECT)/main_full.c
 SOURCE_FILES += $(DEMO_PROJECT)/ns16550.c
 SOURCE_FILES += $(DEMO_PROJECT)/riscv-virt.c
@@ -193,7 +194,7 @@ qemu-debug: all
 		-nographic \
 		-s -S
 
-qemu-timing: CFLAGS += -DconfigENABLE_DOMAIN_TIMING=1
+# qemu-timing: CFLAGS += -DconfigENABLE_DOMAIN_TIMING=1
 qemu-timing: all
 	qemu-system-riscv32 \
 		-smp 1 \

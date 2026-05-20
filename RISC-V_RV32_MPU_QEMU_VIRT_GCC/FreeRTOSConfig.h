@@ -1,5 +1,5 @@
 /*
- * FreeRTOS V202212.00
+* FreeRTOS V202212.00
  * Copyright (C) 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
@@ -143,7 +143,7 @@ machine on which the test is developed). */
 #define configSYSTEM_CALL_STACK_SIZE                   ( 512 )
 
 #define configENABLE_DOMAINS ( 1 )
-#define configNUM_TIME_SLICES ( 6 )
+#define configNUM_TIME_SLICES ( 10 )
 #define configNUM_TICKS_PER_SLICE ( 1 )
 #define configSUPPORT_DYNAMIC_ALLOCATION ( 1 )
 

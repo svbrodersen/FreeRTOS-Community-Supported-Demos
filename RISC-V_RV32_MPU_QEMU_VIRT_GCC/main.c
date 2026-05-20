@@ -100,6 +100,7 @@ extern void freertos_vector_table( void );
  */
 extern void main_blinky( void );
 extern void mpu_blinky( void );
+extern void domain_full( void );
 extern void main_full( void );
 
 /*
@@ -131,7 +132,8 @@ void main( void )
     #if ( mainCREATE_SIMPLE_BLINKY_DEMO_ONLY == 1 )
     {
         //main_blinky();
-        mpu_blinky();
+        // mpu_blinky();
+        domain_full();
     }
     #else
     {

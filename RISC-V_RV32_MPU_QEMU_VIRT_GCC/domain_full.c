@@ -12,8 +12,8 @@
 /* Priorities at which the tasks are created. */
 //#define mainQUEUE_RECEIVE_TASK_PRIORITY    (( tskIDLE_PRIORITY + 2 ) | portPRIVILEGE_BIT )
 //#define mainQUEUE_SEND_TASK_PRIORITY       (( tskIDLE_PRIORITY + 1 ) | portPRIVILEGE_BIT )
-#define mainPRIVILEDGE_PRIORITY    (( tskIDLE_PRIORITY + 1 ))
-#define mainUNPRIVILEDGE_PRIORITY       (( tskIDLE_PRIORITY + 2 ))
+#define mainPRIVILEGED_PRIORITY    (( tskIDLE_PRIORITY + 1 ))
+#define mainUNPRIVILEGED_PRIORITY       (( tskIDLE_PRIORITY + 2 ))
 
 /* The rate at which data is sent to the queue.  The times are converted from
  * milliseconds to ticks using the pdMS_TO_TICKS() macro. */
@@ -83,8 +83,8 @@ void domain_full( void )
         .pvTaskCode     = domainPrivileged,
             .pcName         = "Rx",
             .usStackDepth   = configMINIMAL_STACK_SIZE * 2,
-            .pvParameters   = (void* ) i + 1,
-            .uxPriority     = mainPRIVILEDGE_PRIORITY | portPRIVILEGE_BIT,
+            .pvParameters   = (void* ) (i + 1),
+            .uxPriority     = mainPRIVILEGED_PRIORITY | portPRIVILEGE_BIT,
             .puxStackBuffer = xPrivilegedStack[i],
             .xRegions       =
             {
@@ -133,8 +133,8 @@ static void domainPrivileged(void* pvParameters) {
         .pcName         = "Rx",
         .usStackDepth   = configMINIMAL_STACK_SIZE,
         .pvParameters   = (void* ) dom_num,
-        .uxPriority     = mainUNPRIVILEDGE_PRIORITY,
-        .puxStackBuffer = xPrivilegedUnStack[dom_num],
+        .uxPriority     = mainUNPRIVILEGED_PRIORITY,
+        .puxStackBuffer = xPrivilegedUnStack[dom_num - 1],
         .xRegions       =
         {
             { &_text, _erodata - _text, portMPU_REGION_READ | portMPU_REGION_EXECUTE },
